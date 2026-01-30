@@ -1,0 +1,173 @@
+{
+  "name": "ai agent",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {
+          "responseMode": "responseNodes"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -208,
+        0
+      ],
+      "id": "5878e0ec-9fc1-4ecf-9cdb-61287bea912d",
+      "name": "When chat message received",
+      "webhookId": "8e30cb36-23cd-4e16-9d40-fcaa4e498ba2"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a calendar assistant.\nExtract event details from the user's message.\n\nReturn ONLY valid JSON in this format:\n{\n  \"title\": \"...\",\n  \"start\": \"YYYY-MM-DDTHH:MM:SS\",\n  \"end\": \"YYYY-MM-DDTHH:MM:SS\"\n}\n\nIf duration is not mentioned, assume 1 hour.\nUse user's local time.\nNo explanation. JSON only.\n"
+            },
+            {
+              "content": "={{ $json.chatInput }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "9b7fb10b-774d-496f-a22f-931a61e02cee",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "3TERosPQmROVq7je",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawText = $json.output[0].content[0].text;\n\n// Convert JSON string → real object\nconst event = JSON.parse(rawText);\n\nreturn [\n  {\n    title: event.title,\n    start: event.start,\n    end: event.end\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        352,
+        0
+      ],
+      "id": "b29806f6-5fb3-464c-b992-45196770e431",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "demo1use1only@gmail.com",
+          "mode": "list",
+          "cachedResultName": "demo1use1only@gmail.com"
+        },
+        "start": "={{ $json.start }}",
+        "end": "={{ $json.end }}",
+        "additionalFields": {
+          "summary": "={{ $json.title }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        560,
+        0
+      ],
+      "id": "f1734881-000c-4ea0-9fb9-d65f0dd26587",
+      "name": "Create an event",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "RE6nSERRDrQo4pJQ",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "message": "=✅ Event created successfully!\n\n🗓️ {{ $('Code in JavaScript').item.json.title }}\n⏰ {{ $json.start.dateTime }} → {{ $json.end.dateTime }}\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chat",
+      "typeVersion": 1,
+      "position": [
+        768,
+        0
+      ],
+      "id": "af06d7f8-956a-44c4-b688-7723bdbbd744",
+      "name": "Respond to Chat"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Create an event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create an event": {
+      "main": [
+        [
+          {
+            "node": "Respond to Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "8ae33abb-e3fd-41e9-b11a-83dc3afde2b2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e01cc5952d1c02d34d5faaff5fddafe1c21db29310af4314a15ba4df591554e1"
+  },
+  "id": "EqK2zeKnh_Nf7J2_JlCc6",
+  "tags": []
+}
